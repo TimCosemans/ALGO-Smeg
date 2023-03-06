@@ -45,7 +45,7 @@ with tab1:
         st.number_input("Maximum events", min_value=1, value=100, key="n_cases_max")
         st.write("")
         st.number_input("Minimum duration (s)", min_value=1, value=30, key="n_seconds_min")
-        st.number_input("Maximum duration (s)", min_value=1, value=100, key="n_seconds_max")
+        st.number_input("Maximum duration (s)", min_value=1, value=3000, key="n_seconds_max")
     
     with col2: 
        st.multiselect("Channel", options=np.sort(st.session_state.data["channelGrouping"].unique()), key="channel")
@@ -59,6 +59,8 @@ with tab1:
        #filter all cases that include "either" (="or") or "all" (="and")
        st.multiselect("Events EXcluded", options=np.sort(st.session_state.data["event"].unique()), key="events_excluded")
        #exclude all cases that have ANY of these events
+       st.number_input("Minimum number of activity occurences", min_value=1, value=3, key="n_act_min")
+       st.number_input("Minimum number of transition occurences", min_value=1, value=3, key="n_arc_min")
        st.write("")
        st.write("")
        st.write("")
@@ -104,7 +106,7 @@ with tab1:
                
                with col1: 
                    st.header("Events over time")
-                   st.session_state.filtered_data["Time"] = st.session_state.filtered_data["activityTime"].dt.round('30T').dt.time
+                   st.session_state.filtered_data["Time"] = st.session_state.filtered_data["activityTime"].dt.round('1H').dt.time
                    st.session_state.filtered_data["Event"] = np.where(st.session_state.filtered_data["event"].isin(st.session_state.events_needed), st.session_state.filtered_data["event"], "OTHER")
 
                    st.session_state.df_plot = st.session_state.filtered_data.groupby(['Event', 'Time']).size().reset_index().pivot(columns='Event', index='Time', values=0)
@@ -128,7 +130,8 @@ with tab1:
                    
 
            with tab3: 
-               map = pm4py.discover_heuristics_net(st.session_state.filtered_data, activity_key="event", timestamp_key="activityTime", case_id_key="key")
+               map = pm4py.discover_heuristics_net(st.session_state.filtered_data, activity_key="event", timestamp_key="activityTime", case_id_key="key", 
+                                                   min_act_count=st.session_state.n_act_min, min_dfg_occurrences=st.session_state.n_arc_min)
                pm4py.save_vis_heuristics_net(map, os.path.join(dirname, 'figures/map.png'))
                image = Image.open(os.path.join(dirname, 'figures/map.png'))
                st.image(image)
